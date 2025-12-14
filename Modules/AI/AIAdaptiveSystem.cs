@@ -46,6 +46,9 @@ public class AIAdaptiveSystem : MonoBehaviour
     private int playerIndex = 0;
     private int aiIndex = 1;
 
+    private int maxHistoryWindow = 10;
+    private List<string> activationHistory = new List<string>();
+
     private float nextUpdateTime = 0f;
     private List<double> playerScoreHistory = new List<double>();
     private List<double> aiScoreHistory = new List<double>();
@@ -175,12 +178,26 @@ public class AIAdaptiveSystem : MonoBehaviour
         losingChromosome.AddMutationNoise(mutationNoise);
     }
 
+    private int GetDynamicHistoryWindow()
+    {
+        int playerPos = GetRacePosition(playerIndex);
+        int aiPos = GetRacePosition(aiIndex);
+
+        if (playerPos < aiPos)
+            return 5;  
+        else if (playerPos > aiPos) 
+            return 15; 
+        else
+            return 10; 
+    }
     void SelectAppropriateChromosome()
     {
         int playerPos = GetRacePosition(playerIndex);
         int aiPos = GetRacePosition(aiIndex);
         float correlation = correlationSystem != null ?
             correlationSystem.GetOverallCorrelation() : 0.5f;
+
+        string previousChromosome = currentChromosome == winningChromosome ? "WINNING" : "LOSING";
 
         if (playerPos > aiPos)
             currentChromosome = losingChromosome;
@@ -189,6 +206,31 @@ public class AIAdaptiveSystem : MonoBehaviour
         else
             currentChromosome = (correlation < 0.3f) ? losingChromosome : winningChromosome;
 
+        string newChromosome = currentChromosome == winningChromosome ? "WINNING" : "LOSING";
+
+        maxHistoryWindow = GetDynamicHistoryWindow();
+        activationHistory.Add(newChromosome);
+
+        while (activationHistory.Count > maxHistoryWindow)
+            activationHistory.RemoveAt(0);
+    }
+
+    public float GetLosingChromosomeFrequency()
+    {
+        if (activationHistory.Count == 0) return 0.5f;
+
+        int losingCount = 0;
+        foreach (string chromosome in activationHistory)
+        {
+            if (chromosome == "LOSING") losingCount++;
+        }
+
+        return (float)losingCount / activationHistory.Count;
+    }
+
+    public float GetWinningChromosomeFrequency()
+    {
+        return 1f - GetLosingChromosomeFrequency();
     }
 
     int GetRacePosition(int carIndex)
@@ -248,6 +290,7 @@ public class AIAdaptiveSystem : MonoBehaviour
     {
         playerScoreHistory.Clear();
         aiScoreHistory.Clear();
+        activationHistory.Clear();
         CreateChromosomes();
     }
 }

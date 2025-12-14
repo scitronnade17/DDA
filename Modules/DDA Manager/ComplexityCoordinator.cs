@@ -136,14 +136,9 @@ public class ComplexityCoordinator : MonoBehaviour
         if (aiAdaptiveSystem == null)
             return 0.5f;
 
-        string activeChromosome = aiAdaptiveSystem.GetActiveChromosomeType();
+        float losingChromosomeFrequency = aiAdaptiveSystem.GetLosingChromosomeFrequency();
 
-        if (activeChromosome == "WINNING")
-            return 0.3f;
-        else if (activeChromosome == "LOSING")
-            return 0.7f;
-        else
-            return 0.5f;
+        return Mathf.Lerp(0.3f, 0.7f, losingChromosomeFrequency);
     }
 
     private void UpdateAlphaBasedOnSkill()
